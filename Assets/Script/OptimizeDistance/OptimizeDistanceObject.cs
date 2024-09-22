@@ -4,9 +4,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UniRx;
 using UnityEngine;
-using Zenject;
 
-    public class OptimizeDistanceObject
+public class OptimizeDistanceObject : MonoBehaviour
+{
+    private void Start()
     {
-        
+
     }
+}
