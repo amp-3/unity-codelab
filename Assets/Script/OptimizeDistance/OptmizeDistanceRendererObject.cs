@@ -5,28 +5,24 @@ using System.Collections.Generic;
 using UniRx;
 using UnityEngine;
 
-public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
+public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
 {
     private const float DISTANCE = 10f;
     private const float SQR_DISTANCE = DISTANCE * DISTANCE;
 
+    [SerializeField]
+    private Renderer[] rendererArray = null;
+
     private void Start()
     {
         DistanceBurstCompilerManager.Instance.RegistDistanceRequester(this);
+
+        rendererArray = GetComponentsInChildren<Renderer>();
     }
 
     #region IDistanceRequester
     public CalcDistanceRequestData GetCalcDistanceRequestData()
     {
-        //Vector3 position = transform.position;
-        //Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
-
-        //return new CalcDistanceRequestData(
-        //    position,
-        //    cameraPosition
-        //);
-
-
         Vector3 position = transform.position;
 
         return new CalcDistanceRequestData(
@@ -39,7 +35,16 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
     {
         bool isVisible = sqrDistance <= SQR_DISTANCE;
 
-        if (gameObject.activeSelf != isVisible) gameObject.SetActive(isVisible);
+        if (rendererArray != null)
+        {
+            foreach (Renderer renderer in rendererArray)
+            {
+                if (renderer != null)
+                {
+                    if (renderer.enabled != isVisible) renderer.enabled = isVisible;
+                }
+            }
+        }
     }
     #endregion
 

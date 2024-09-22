@@ -9,7 +9,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-public enum SystemPositionType
+public enum SystemPositionType : byte
 {
     Manual,
     Camera
@@ -32,7 +32,7 @@ public readonly struct CalcDistanceRequestData
     /// </summary>
     /// <param name="position1"></param>
     /// <param name="position2"></param>
-    public CalcDistanceRequestData(Vector3 position1, Vector3 position2)
+    public CalcDistanceRequestData(in Vector3 position1, in Vector3 position2)
     {
         this.isRequest = true;
 
@@ -46,7 +46,7 @@ public readonly struct CalcDistanceRequestData
     /// </summary>
     /// <param name="position1"></param>
     /// <param name="systemPositionType"></param>
-    public CalcDistanceRequestData(Vector3 position1, SystemPositionType systemPositionType)
+    public CalcDistanceRequestData(in Vector3 position1, SystemPositionType systemPositionType)
     {
         this.isRequest = true;
 
@@ -125,13 +125,18 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
         int count = distanceRequesterList.Count;
 
         if (count == 0) return;
-
+        System.Diagnostics.Stopwatch sw1 = new System.Diagnostics.Stopwatch();
+        sw1.Start();
         NativeArray<float3> positions1Native = new NativeArray<float3>(count, Allocator.TempJob);
         NativeArray<float3> positions2Native = new NativeArray<float3>(count, Allocator.TempJob);
         NativeArray<float> distancesNative = new NativeArray<float>(count, Allocator.TempJob);
+        sw1.Stop();
+
 
         Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
 
+        System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
+        sw2.Start();
         for (int i = 0; i < distanceRequesterList.Count; i++)
         {
             CalcDistanceRequestData calcDistanceRequestData = distanceRequesterList[i].GetCalcDistanceRequestData();
@@ -148,21 +153,34 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
                     break;
             }
         }
+        sw2.Stop();
 
+        System.Diagnostics.Stopwatch sw3 = new System.Diagnostics.Stopwatch();
+        sw3.Start();
         CalculateSqrDistancesJob job = new CalculateSqrDistancesJob
         {
             Positions1 = positions1Native,
             Positions2 = positions2Native,
             SqrDistances = distancesNative
         };
+        sw3.Stop();
 
+
+        System.Diagnostics.Stopwatch sw4 = new System.Diagnostics.Stopwatch();
+        sw4.Start();
         JobHandle handle = job.Schedule(positions1Native.Length, 64);
         handle.Complete();
+        sw4.Stop();
 
+        System.Diagnostics.Stopwatch sw5 = new System.Diagnostics.Stopwatch();
+        sw5.Start();
         for (int i = 0; i < distanceRequesterList.Count; i++)
         {
             distanceRequesterList[i].ReturnSqrDistance(distancesNative[i]);
         }
+        sw5.Stop();
+
+        Debug.Log("1: " + sw1.ElapsedMilliseconds + "  2: " + sw2.ElapsedMilliseconds + "  3: " + sw3.ElapsedMilliseconds + "  4: " + sw4.ElapsedMilliseconds + "  5: " + sw5.ElapsedMilliseconds + "  2: " + sw4.ElapsedMilliseconds);
 
         if (positions1Native.IsCreated) positions1Native.Dispose();
         if (positions2Native.IsCreated) positions2Native.Dispose();
