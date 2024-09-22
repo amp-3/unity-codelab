@@ -8,15 +8,23 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Jobs;
 
-public enum SystemPositionType : byte
+public enum PositionType : byte
 {
     Manual,
+    Transform,
     Camera
 }
 
 public readonly struct CalcDistanceRequestData
 {
+    public enum PositionField : byte
+    {
+        Position1,
+        Position2
+    }
+
     public static readonly CalcDistanceRequestData DONT_REQUEST = new CalcDistanceRequestData(Unit.Default);
 
     // リクエストするかどうか。falseなら計算しない
@@ -25,7 +33,23 @@ public readonly struct CalcDistanceRequestData
     public readonly Vector3 position1;
     public readonly Vector3 position2;
 
-    public readonly SystemPositionType systemPositionType;
+    public readonly Transform tranfsorm1;
+    public readonly Transform tranfsorm2;
+
+    public readonly PositionType positionType1;
+    public readonly PositionType positionType2;
+
+    public CalcDistanceRequestData(Vector3 position1, Vector3 position2, Transform tranfsorm1, Transform tranfsorm2, PositionType positionType1, PositionType positionType2)
+    {
+        this.isRequest = true;
+
+        this.position1 = position1;
+        this.position2 = position2;
+        this.tranfsorm1 = tranfsorm1;
+        this.tranfsorm2 = tranfsorm2;
+        this.positionType1 = positionType1;
+        this.positionType2 = positionType2;
+    }
 
     /// <summary>
     /// 2座標とも指定するコンストラクタ
@@ -38,21 +62,27 @@ public readonly struct CalcDistanceRequestData
 
         this.position1 = position1;
         this.position2 = position2;
-        this.systemPositionType = SystemPositionType.Manual;
+        this.tranfsorm1 = null;
+        this.tranfsorm2 = null;
+        this.positionType1 = PositionType.Manual;
+        this.positionType2 = PositionType.Manual;
     }
 
     /// <summary>
     /// Position2はSystemPositionTypeに応じた座標を指定するコンストラクタ
     /// </summary>
     /// <param name="position1"></param>
-    /// <param name="systemPositionType"></param>
-    public CalcDistanceRequestData(in Vector3 position1, SystemPositionType systemPositionType)
+    /// <param name="positionType2"></param>
+    public CalcDistanceRequestData(in Vector3 position1, PositionType positionType2)
     {
         this.isRequest = true;
 
         this.position1 = position1;
         this.position2 = Vector3.zero;
-        this.systemPositionType = systemPositionType;
+        this.tranfsorm1 = null;
+        this.tranfsorm2 = null;
+        this.positionType1 = PositionType.Manual;
+        this.positionType2 = positionType2;
     }
 
     /// <summary>
@@ -65,7 +95,24 @@ public readonly struct CalcDistanceRequestData
 
         this.position1 = Vector3.zero;
         this.position2 = Vector3.zero;
-        this.systemPositionType = SystemPositionType.Manual;
+        this.tranfsorm1 = null;
+        this.tranfsorm2 = null;
+        this.positionType1 = PositionType.Manual;
+        this.positionType2 = PositionType.Manual;
+    }
+}
+
+public readonly struct RequestGetTransformPositionData
+{
+    public readonly CalcDistanceRequestData.PositionField positionField;
+    public readonly Transform targetTransform;
+    public readonly int nativeArrayIndex;
+
+    public RequestGetTransformPositionData(CalcDistanceRequestData.PositionField positionField, Transform targetTransform, int nativeArrayIndex)
+    {
+        this.positionField = positionField;
+        this.targetTransform = targetTransform;
+        this.nativeArrayIndex = nativeArrayIndex;
     }
 }
 
@@ -96,7 +143,13 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
     private static DistanceBurstCompilerManager instance = null;
     public static DistanceBurstCompilerManager Instance => instance;
 
+    // 計算要求リスト
     private List<IDistanceRequester> distanceRequesterList = new List<IDistanceRequester>();
+
+    // TranfsormからPositionを取得する処理用の一時リスト
+    private List<RequestGetTransformPositionData> requestGetTransformPositionDataListForWork = new List<RequestGetTransformPositionData>();
+
+    private TransformAccessArray transformAccessArray;
 
     private IDisposable disposable = null;
 
@@ -109,6 +162,8 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
         }
 
         instance = this;
+
+        transformAccessArray = new TransformAccessArray(16);
     }
 
     void Start()
@@ -125,6 +180,9 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
         int count = distanceRequesterList.Count;
 
         if (count == 0) return;
+
+        requestGetTransformPositionDataListForWork.Clear();
+
 #if SW
         System.Diagnostics.Stopwatch sw1 = new System.Diagnostics.Stopwatch();
         sw1.Start();
@@ -154,29 +212,97 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
         System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
         sw2.Start();
 #endif
+
         for (int i = 0; i < distanceRequesterList.Count; i++)
         {
             distanceRequesterList[i].GetCalcDistanceRequestData(out CalcDistanceRequestData calcDistanceRequestData);
 
-            positions1Native[i] = calcDistanceRequestData.position1;
-
-            switch (calcDistanceRequestData.systemPositionType)
+            switch (calcDistanceRequestData.positionType1)
             {
-                case SystemPositionType.Manual:
+                case PositionType.Manual:
+                    positions1Native[i] = calcDistanceRequestData.position1;
+                    break;
+                case PositionType.Transform:
+                    // Transform取得リクエストに追加
+                    requestGetTransformPositionDataListForWork.Add(new RequestGetTransformPositionData(
+                        CalcDistanceRequestData.PositionField.Position1,
+                        calcDistanceRequestData.tranfsorm1,
+                        i
+                        ));
+                    break;
+                case PositionType.Camera:
+                    positions1Native[i] = cameraPosition;
+                    break;
+            }
+
+            switch (calcDistanceRequestData.positionType2)
+            {
+                case PositionType.Manual:
                     positions2Native[i] = calcDistanceRequestData.position2;
                     break;
-                case SystemPositionType.Camera:
+                case PositionType.Transform:
+                    // Transform取得リクエストに追加
+                    requestGetTransformPositionDataListForWork.Add(new RequestGetTransformPositionData(
+                        CalcDistanceRequestData.PositionField.Position2,
+                        calcDistanceRequestData.tranfsorm2,
+                        i
+                        ));
+                    break;
+                case PositionType.Camera:
                     positions2Native[i] = cameraPosition;
                     break;
             }
         }
 #if SW
         sw2.Stop();
-#endif
 
-#if SW
         System.Diagnostics.Stopwatch sw3 = new System.Diagnostics.Stopwatch();
         sw3.Start();
+#endif
+
+        int requestGetTransformPositionDataListCount = requestGetTransformPositionDataListForWork.Count;
+        ResizeTransformAccessArray(requestGetTransformPositionDataListCount);
+        NativeArray<float3> resultTransformPositionArray = new NativeArray<float3>(requestGetTransformPositionDataListCount, Allocator.TempJob);
+
+        for (int i = 0; i < requestGetTransformPositionDataListForWork.Count; i++)
+        {
+            RequestGetTransformPositionData requestGetTransformPositionData = requestGetTransformPositionDataListForWork[i];
+
+            transformAccessArray[i] = requestGetTransformPositionData.targetTransform;
+        }
+
+        var getTransformPositionJob = new TransformPositionJobParallel()
+        {
+            Positions = resultTransformPositionArray
+        };
+
+        // ジョブをスケジュールして実行
+        JobHandle getTransformPositionHandle = getTransformPositionJob.Schedule(transformAccessArray);
+        getTransformPositionHandle.Complete();
+
+        for (int i = 0; i < requestGetTransformPositionDataListForWork.Count; i++)
+        {
+            RequestGetTransformPositionData requestGetTransformPositionData = requestGetTransformPositionDataListForWork[i];
+            float3 resultTransformPosition = resultTransformPositionArray[i];
+
+            switch (requestGetTransformPositionData.positionField)
+            {
+                case CalcDistanceRequestData.PositionField.Position1:
+                    positions1Native[requestGetTransformPositionData.nativeArrayIndex] = resultTransformPosition;
+                    break;
+                case CalcDistanceRequestData.PositionField.Position2:
+                    positions2Native[requestGetTransformPositionData.nativeArrayIndex] = resultTransformPosition;
+                    break;
+            }
+        }
+
+        resultTransformPositionArray.Dispose();
+
+#if SW
+        sw3.Stop();
+
+        System.Diagnostics.Stopwatch sw4 = new System.Diagnostics.Stopwatch();
+        sw4.Start();
 #endif
         CalculateSqrDistancesJob job = new CalculateSqrDistancesJob
         {
@@ -185,17 +311,6 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
             SqrDistances = distancesNative
         };
 #if SW
-        sw3.Stop();
-#endif
-
-#if SW
-        System.Diagnostics.Stopwatch sw4 = new System.Diagnostics.Stopwatch();
-        sw4.Start();
-#endif
-        JobHandle handle = job.Schedule(positions1Native.Length, 64);
-        handle.Complete();
-
-#if SW
         sw4.Stop();
 #endif
 
@@ -203,16 +318,25 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
         System.Diagnostics.Stopwatch sw5 = new System.Diagnostics.Stopwatch();
         sw5.Start();
 #endif
+        JobHandle handle = job.Schedule(positions1Native.Length, 64);
+        handle.Complete();
+
+#if SW
+        sw5.Stop();
+
+        System.Diagnostics.Stopwatch sw6 = new System.Diagnostics.Stopwatch();
+        sw6.Start();
+#endif
         for (int i = 0; i < distanceRequesterList.Count; i++)
         {
             distanceRequesterList[i].ReturnSqrDistance(distancesNative[i]);
         }
 #if SW
-        sw5.Stop();
+        sw6.Stop();
 #endif
 
 #if SW
-        Debug.Log("1: " + sw1.ElapsedMilliseconds + "  2: " + sw2.ElapsedMilliseconds + "  3: " + sw3.ElapsedMilliseconds + "  4: " + sw4.ElapsedMilliseconds + "  5: " + sw5.ElapsedMilliseconds + "  2: " + sw4.ElapsedMilliseconds + "  loop: " + swloop.ElapsedMilliseconds);
+        Debug.Log("1: " + sw1.ElapsedMilliseconds + "   2: " + sw2.ElapsedMilliseconds + "   3: " + sw3.ElapsedMilliseconds + "   4: " + sw4.ElapsedMilliseconds + "   5: " + sw5.ElapsedMilliseconds + "   6: " + sw6.ElapsedMilliseconds + "   loop: " + swloop.ElapsedMilliseconds);
 #endif
 
         if (positions1Native.IsCreated) positions1Native.Dispose();
@@ -236,7 +360,43 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
     }
     #endregion
 
+    /// <summary>
+    /// TransformAccessArrayの要素数を引数の値にリサイズする
+    /// </summary>
+    /// <param name="length"></param>
+    private void ResizeTransformAccessArray(int length)
+    {
+        int currentLength = transformAccessArray.length;
+        int diffLength = length - currentLength;
 
+        if (diffLength == 0)
+        {
+            return;
+        }
+        else if (diffLength > 0)
+        {
+            for (int i = 0; i < diffLength; i++)
+            {
+                transformAccessArray.Add(null);
+            }
+        }
+        else // if(diffLength < 0)
+        {
+            for (int i = diffLength - 1; i >= 0; i--)
+            {
+                transformAccessArray.RemoveAtSwapBack(transformAccessArray.length - 1);
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (transformAccessArray.isCreated) transformAccessArray.Dispose();
+    }
+
+    /// <summary>
+    /// Sqrの距離を計算して返却するJob
+    /// </summary>
     [BurstCompile]
     struct CalculateSqrDistancesJob : IJobParallelFor
     {
@@ -249,6 +409,20 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
             float3 position1 = Positions1[index];
             float3 position2 = Positions2[index];
             SqrDistances[index] = math.distancesq(position1, position2);
+        }
+    }
+
+    /// <summary>
+    /// Transformから高速にPositionを取得して返却するJob
+    /// </summary>
+    [BurstCompile]
+    struct TransformPositionJobParallel : IJobParallelForTransform
+    {
+        [WriteOnly] public NativeArray<float3> Positions;
+
+        public void Execute(int index, TransformAccess transform)
+        {
+            Positions[index] = transform.position;
         }
     }
 }

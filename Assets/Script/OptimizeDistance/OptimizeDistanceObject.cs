@@ -31,7 +31,7 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
 
         calcDistanceRequestData = new CalcDistanceRequestData(
             position,
-            SystemPositionType.Camera
+            PositionType.Camera
         );
     }
 

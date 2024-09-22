@@ -13,8 +13,12 @@ public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
     [SerializeField]
     private Renderer[] rendererArray = null;
 
+    private Transform _transform = null;
+
     private void Start()
     {
+        this._transform = transform;
+
         DistanceBurstCompilerManager.Instance.RegistDistanceRequester(this);
 
         rendererArray = GetComponentsInChildren<Renderer>();
@@ -23,11 +27,21 @@ public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
     #region IDistanceRequester
     public void GetCalcDistanceRequestData(out CalcDistanceRequestData calcDistanceRequestData)
     {
-        Vector3 position = transform.position;
+        //Vector3 position = transform.position;
+
+        //calcDistanceRequestData = new CalcDistanceRequestData(
+        //    position,
+        //    PositionType.Camera
+        //);
+
 
         calcDistanceRequestData = new CalcDistanceRequestData(
-            position,
-            SystemPositionType.Camera
+            Vector3.zero,
+            Vector3.zero,
+            _transform,
+            null,
+            PositionType.Transform,
+            PositionType.Camera
         );
     }
 
