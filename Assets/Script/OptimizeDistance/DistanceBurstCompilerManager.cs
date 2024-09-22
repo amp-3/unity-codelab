@@ -212,7 +212,7 @@ public class DistanceBurstCompilerManager : MonoBehaviour, IRegistDistanceReques
 #endif
 
 #if SW
-        Debug.Log("1: " + sw1.ElapsedMilliseconds + "  2: " + sw2.ElapsedMilliseconds + "  3: " + sw3.ElapsedMilliseconds + "  4: " + sw4.ElapsedMilliseconds + "  5: " + sw5.ElapsedMilliseconds + "  2: " + sw4.ElapsedMilliseconds + "  loop: " + swloop.ElapsedMilliseconds);
+        Debug.Log("1: " + sw1.ElapsedMilliseconds + "  2: " + sw2.ElapsedMilliseconds + "  3: " + sw3.ElapsedMilliseconds + "  4: " + sw4.ElapsedMilliseconds + "  5: " + sw5.ElapsedMilliseconds + "  loop: " + swloop.ElapsedMilliseconds);
 #endif
 
         if (positions1Native.IsCreated) positions1Native.Dispose();

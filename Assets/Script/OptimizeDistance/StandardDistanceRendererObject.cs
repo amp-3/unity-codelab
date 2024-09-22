@@ -14,17 +14,21 @@ public class StandardDistanceRendererObject : MonoBehaviour
     [SerializeField]
     private Renderer[] rendererArray = null;
 
+    private Transform _transform = null;
+
     private IDisposable disposable = null;
 
     private void Start()
     {
+        this._transform = transform;
+
         rendererArray = GetComponentsInChildren<Renderer>();
 
         disposable = Observable.EveryGameObjectUpdate()
             .Subscribe(_ =>
             {
                 Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
-                Vector3 position = transform.position;
+                Vector3 position = _transform.position;
 
                 bool isVisible = Vector3Util.SqrDistance(position, cameraPosition) <= SQR_DISTANCE;
 

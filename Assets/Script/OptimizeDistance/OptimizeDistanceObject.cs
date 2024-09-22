@@ -10,8 +10,12 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
     private const float DISTANCE = 10f;
     private const float SQR_DISTANCE = DISTANCE * DISTANCE;
 
+    private Transform _transform = null;
+
     private void Start()
     {
+        this._transform = transform;
+
         DistanceBurstCompilerManager.Instance.RegistDistanceRequester(this);
     }
 
@@ -27,7 +31,7 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
         //);
 
 
-        Vector3 position = transform.position;
+        Vector3 position = _transform.position;
 
         calcDistanceRequestData = new CalcDistanceRequestData(
             position,
