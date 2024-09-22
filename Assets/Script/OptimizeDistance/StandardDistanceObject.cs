@@ -8,6 +8,10 @@ using UnityEngine;
 
 public class StandardDistanceObject : MonoBehaviour
 {
+    private const float DISTANCE = 10f;
+    private const float SQR_DISTANCE = DISTANCE * DISTANCE;
+
+
     private void Start()
     {
         Observable.EveryGameObjectUpdate()
@@ -16,7 +20,7 @@ public class StandardDistanceObject : MonoBehaviour
                 Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
                 Vector3 position = transform.position;
 
-                bool isVisible = Vector3Util.Distance(position, cameraPosition) < 10f;
+                bool isVisible = Vector3Util.SqrDistance(position, cameraPosition) < SQR_DISTANCE;
 
                 if (gameObject.activeSelf != isVisible) gameObject.SetActive(isVisible);
             }).AddTo(this);
