@@ -16,7 +16,7 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
     }
 
     #region IDistanceRequester
-    public CalcDistanceRequestData GetCalcDistanceRequestData()
+    public void GetCalcDistanceRequestData(out CalcDistanceRequestData calcDistanceRequestData)
     {
         //Vector3 position = transform.position;
         //Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
@@ -29,11 +29,12 @@ public class OptimizeDistanceObject : MonoBehaviour, IDistanceRequester
 
         Vector3 position = transform.position;
 
-        return new CalcDistanceRequestData(
+        calcDistanceRequestData = new CalcDistanceRequestData(
             position,
             SystemPositionType.Camera
         );
     }
+
 
     public void ReturnSqrDistance(float sqrDistance)
     {

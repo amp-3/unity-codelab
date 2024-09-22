@@ -21,11 +21,11 @@ public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
     }
 
     #region IDistanceRequester
-    public CalcDistanceRequestData GetCalcDistanceRequestData()
+    public void GetCalcDistanceRequestData(out CalcDistanceRequestData calcDistanceRequestData)
     {
         Vector3 position = transform.position;
 
-        return new CalcDistanceRequestData(
+        calcDistanceRequestData = new CalcDistanceRequestData(
             position,
             SystemPositionType.Camera
         );
