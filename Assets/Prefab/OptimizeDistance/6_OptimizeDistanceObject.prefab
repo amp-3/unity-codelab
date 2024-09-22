@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5011937956002014105}
   - component: {fileID: 698660221467809688}
   m_Layer: 0
-  m_Name: OptimizeDistanceObject
+  m_Name: 6_OptimizeDistanceObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
