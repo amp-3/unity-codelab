@@ -9,11 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8095410376947222412}
-  - component: {fileID: 4568209005840179068}
-  - component: {fileID: 1045060198009767352}
-  - component: {fileID: 897597007103391105}
+  - component: {fileID: 2187648358121697145}
   m_Layer: 0
-  m_Name: 3_CollisionDistanceObject
+  m_Name: 3_StandardDistanceObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,7 +33,7 @@ Transform:
   - {fileID: 3988871850536206297}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4568209005840179068
+--- !u!114 &2187648358121697145
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,46 +42,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1537972984508498061}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d7f8d4e1e8067a43bba0380e1752867, type: 3}
+  m_Script: {fileID: 11500000, guid: adfadc739563cfe4eafb6b3805894058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  onCollisionNotifierComponent: {fileID: 1045060198009767352}
---- !u!114 &1045060198009767352
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537972984508498061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4027b0d04af5bc2479d48c9b04c07fd0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  collisionTargetLayer:
-    serializedVersion: 2
-    m_Bits: 4294967295
---- !u!135 &897597007103391105
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537972984508498061}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 10
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &3881539916054649995
 PrefabInstance:
   m_ObjectHideFlags: 0
