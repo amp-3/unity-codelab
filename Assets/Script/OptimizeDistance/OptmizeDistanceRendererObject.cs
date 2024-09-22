@@ -14,10 +14,12 @@ public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
     private Renderer[] rendererArray = null;
 
     private Transform _transform = null;
+    private int transformInstanceId = 0;
 
     private void Start()
     {
         this._transform = transform;
+        this.transformInstanceId = _transform.GetInstanceID();
 
         DistanceBurstCompilerManager.Instance.RegistDistanceRequester(this);
 
@@ -38,8 +40,8 @@ public class OptimizeDistanceRendererObject : MonoBehaviour, IDistanceRequester
         calcDistanceRequestData = new CalcDistanceRequestData(
             Vector3.zero,
             Vector3.zero,
-            _transform,
-            null,
+            transformInstanceId,
+            0,
             PositionType.Transform,
             PositionType.Camera
         );
