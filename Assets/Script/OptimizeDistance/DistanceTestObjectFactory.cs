@@ -8,12 +8,12 @@ using UnityEngine;
 public class DistanceTestObjectFactory : MonoBehaviour
 {
     [SerializeField]
-    private int createCount = 10000;
-    [SerializeField]
     private float putPositionRnadomRange = 5f;
 
     [SerializeField]
     private GameObject[] prefabArray = null;
+
+    private int createCount = 1;
 
     private List<GameObject> gameObjectList = new List<GameObject>();
 
@@ -46,6 +46,16 @@ public class DistanceTestObjectFactory : MonoBehaviour
         }
     }
 
+    public void CreateGameObject(int index)
+    {
+        CreateGameObject(prefabArray[index], createCount);
+    }
+
+    public string GetObjectInfo(int index)
+    {
+        return prefabArray[index].name;
+    }
+
     private void CreateGameObject(GameObject prefab, int count)
     {
         AllDestroy();
@@ -59,6 +69,16 @@ public class DistanceTestObjectFactory : MonoBehaviour
 
             gameObjectList.Add(Instantiate(prefab, position, Quaternion.identity, null));
         }
+    }
+
+    public int GetCreateCount()
+    {
+        return createCount;
+    }
+
+    public void SetCreateCount(int count)
+    {
+        this.createCount = count;
     }
 
     private void AllDestroy()
