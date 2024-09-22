@@ -90,4 +90,9 @@ public class OnCollisionNotifierComponent : MonoBehaviour
     {
         this.collisionTargetLayer = layerMask;
     }
+
+    private void OnDestroy()
+    {
+        disposables.Dispose();
+    }
 }
