@@ -20,7 +20,7 @@ public class StandardDistanceObject : MonoBehaviour
                 Vector3 cameraPosition = CameraSingleton.Instance.transform.position;
                 Vector3 position = transform.position;
 
-                bool isVisible = Vector3Util.SqrDistance(position, cameraPosition) < SQR_DISTANCE;
+                bool isVisible = Vector3Util.SqrDistance(position, cameraPosition) <= SQR_DISTANCE;
 
                 if (gameObject.activeSelf != isVisible) gameObject.SetActive(isVisible);
             }).AddTo(this);
